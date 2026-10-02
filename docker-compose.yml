@@ -1,0 +1,48 @@
+# docker compose up -d --build     ->  API on http://localhost:8000
+# Credentials below are development defaults; override them in a .env file.
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: helpdesk
+      MYSQL_USER: helpdesk
+      MYSQL_PASSWORD: ${DB_PASSWORD:-helpdesk}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+    ports:
+      - '33061:3306'
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./docker/mysql-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'mysqladmin ping -h localhost -uhelpdesk -p$$MYSQL_PASSWORD --silent']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  api:
+    build: ./api
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: helpdesk
+      DB_USERNAME: helpdesk
+      DB_PASSWORD: ${DB_PASSWORD:-helpdesk}
+      # Tokens, not cookies: no server-side session or cache table is needed.
+      SESSION_DRIVER: array
+      CACHE_STORE: file
+      QUEUE_CONNECTION: sync
+    ports:
+      - '8000:8000'
+    volumes:
+      - ./api:/app
+      # Dependencies stay inside Docker: thousands of small files read through a
+      # Windows or macOS bind mount make every request take seconds.
+      - api-vendor:/app/vendor
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql-data:
+  api-vendor:
