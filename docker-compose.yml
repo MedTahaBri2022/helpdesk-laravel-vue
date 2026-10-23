@@ -9,7 +9,7 @@ services:
       MYSQL_PASSWORD: ${DB_PASSWORD:-helpdesk}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
     ports:
-      - '33061:3306'
+      - '127.0.0.1:33061:3306'
     volumes:
       - mysql-data:/var/lib/mysql
       - ./docker/mysql-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -33,7 +33,7 @@ services:
       CACHE_STORE: file
       QUEUE_CONNECTION: sync
     ports:
-      - '8000:8000'
+      - '127.0.0.1:8000:8000'
     volumes:
       - ./api:/app
       # Dependencies stay inside Docker: thousands of small files read through a
